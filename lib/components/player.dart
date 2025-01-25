@@ -90,8 +90,8 @@ class Player extends MovableActor
   }
 
   @override
-  bool onKeyEvent(RawKeyEvent event, Set<LogicalKeyboardKey> keysPressed) {
-    if (event is RawKeyDownEvent) {
+  bool onKeyEvent(KeyEvent event, Set<LogicalKeyboardKey> keysPressed) {
+    if (event is KeyDownEvent) {
       if (event.logicalKey == LogicalKeyboardKey.enter) {
         game.world.isPaused = false;
         return false;
@@ -114,7 +114,7 @@ class Player extends MovableActor
         movementToMake = Vector2(1, movementToMake.y);
       }
       return false;
-    } else if (event is RawKeyUpEvent) {
+    } else if (event is KeyUpEvent) {
       if (event.logicalKey == LogicalKeyboardKey.keyW) {
         movementToMake.y =
             keysPressed.contains(LogicalKeyboardKey.keyS) ? 1 : 0;
