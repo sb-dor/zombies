@@ -1,117 +1,44 @@
-import 'dart:math';
-
+import 'dart:async';
 import 'package:flame/components.dart';
-import 'package:flame/events.dart';
-import 'package:flame/experimental.dart';
-import 'package:flame_tiled/flame_tiled.dart';
-import 'package:zombies/components/components.dart';
-import 'package:zombies/utilities/utilities.dart';
+import 'package:zombies/assets.dart';
+import 'package:zombies/zombies_game.dart';
 
-import '../zombie_game.dart';
-import '../../constants.dart';
+import 'components.dart';
 
-class ZombieWorld extends World
-    with HasGameRef<ZombieGame>, HasCollisionDetection, TapCallbacks {
+class ZombieWorld extends World with HasGameRef<ZombieGame> {
   ZombieWorld({super.children});
 
-  late Vector2 size = Vector2(
-    map.tileMap.map.width * worldTileSize,
-    map.tileMap.map.height * worldTileSize,
-  );
-  final unwalkableComponentEdges = <Line>[];
-  late final Player player;
-  late final Zombie zombie;
-  final Random rnd = Random();
+  final List<Land> lands = [];
+  late final Player _player;
 
-  late TiledComponent map;
+  Player get player => _player;
 
   @override
-  Future<void> onLoad() async {
-    map = await TiledComponent.load(
-      'world.tmx',
-      Vector2.all(worldTileSize),
-    );
-
-    final objectLayer = map.tileMap.getLayer<ObjectGroup>('Objects')!;
-    for (final TiledObject object in objectLayer.objects) {
-      if (!object.isPolygon) continue;
-      if (!object.properties.byName.containsKey('blocksMovement')) return;
-      final vertices = <Vector2>[];
-      Vector2? lastPoint;
-      Vector2? nextPoint;
-      Vector2? firstPoint;
-      for (final point in object.polygon) {
-        nextPoint = Vector2((point.x + object.x) * worldScale,
-            (point.y + object.y) * worldScale);
-        firstPoint ??= nextPoint;
-        vertices.add(nextPoint);
-
-        // If there is a last point, or this is the end of the list, we have a
-        // line to add to our cached list of lines
-        if (lastPoint != null) {
-          unwalkableComponentEdges.add(Line(lastPoint, nextPoint));
-        }
-        lastPoint = nextPoint;
-      }
-      unwalkableComponentEdges.add(Line(lastPoint!, firstPoint!));
-      add(UnwalkableComponent(vertices));
-    }
-
-    for (final line in unwalkableComponentEdges) {
-      add(LineComponent.red(line: line, thickness: 3));
-    }
-
-    player = Player();
-    addAll([map, player]);
-
-    int zombiesToAdd = 50;
-    int counter = 0;
-    while (counter < zombiesToAdd) {
-      final x = rnd.nextInt(8) + 1;
-      final y = rnd.nextInt(8) + 1;
-      add(Zombie(
-        position: Vector2(worldTileSize * x, worldTileSize * y),
-      ));
-      counter++;
-    }
-
-    // Set up Camera
-    gameRef.cameraComponent.follow(player);
-    gameRef.cameraComponent.viewport.add(FpsTextComponent());
-  }
-
-  @override
-  void onGameResize(Vector2 size) {
-    super.onGameResize(size);
-    setCameraBounds(size);
-  }
-
-  void setCameraBounds(Vector2 gameSize) {
-    gameRef.cameraComponent.setBounds(
-      Rectangle.fromLTRB(
-        gameSize.x / 2,
-        gameSize.y / 2,
-        size.x - gameSize.x / 2,
-        size.y - gameSize.y / 2,
+  FutureOr<void> onLoad() async {
+    await super.onLoad();
+    // final greenLandImage = gameRef.images.fromCache(
+    //   Assets.assets_town_tile_0000_png,
+    // );
+    add(
+      GreenLand(
+        position: Vector2.all(0),
+        // sprite: Sprite(greenLandImage),
       ),
     );
-  }
 
-  bool isPaused = false;
-  bool isPausing = false;
+    final playerImage = gameRef.images.fromCache(
+      Assets.assets_characters_Adventurer_Poses_adventurer_action1_png,
+    );
 
-  @override
-  void updateTree(double dt) {
-    if (!isPaused) {
-      super.updateTree(0.016667);
-      if (isPausing) {
-        isPaused = true;
-      }
-    }
-  }
+    _player = Player(
+      position: Vector2.all(0),
+      sprite: Sprite(
+        playerImage,
+      ),
+    );
 
-  @override
-  void onTapUp(TapUpEvent event) {
-    player.castFireball(event.localPosition);
+    add(_player);
+
+    gameRef.cameraComponent.follow(_player);
   }
 }
